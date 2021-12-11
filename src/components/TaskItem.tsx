@@ -1,21 +1,51 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Icon } from 'react-native-vector-icons/Icon';
+import Icon from 'react-native-vector-icons/Feather';
+
 import { EditTaskArgs } from '../pages/Home';
 import { Task } from './TasksList';
 import trashIcon from '../assets/icons/trash/trash.png'
+import editIcon from '../assets/icons/edit/edit.png'
 
-interface TasktaskProps {
+interface TaskItemProps {
   task: Task,
   toggleTaskDone: (id: number) => void;
   removeTask: (id: number) => void;
   editTask: ({ taskId, taskNewTitle }: EditTaskArgs) => void;
 }
 
-export function Tasktask(task, toggleTaskDone, removeTask, editTask) {
+export function TaskItem({ task, toggleTaskDone, removeTask, editTask }: TaskItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [taskNewTitleValue, setTaskNewTitleValue] = useState(task.title);
+  const textInputRef = useRef<TextInput>(null);
+
+  function handleStartEditing() {
+    setIsEditing(true);
+  }
+
+  function handleCancelEditing() {
+    setTaskNewTitleValue(task.title);
+    setIsEditing(false);
+  }
+
+  function handleSubmitEditing() {
+    editTask({ taskId: task.id, taskNewTitle: task.title });
+    setIsEditing(false);
+  }
+
+  useEffect(() => {
+    if (textInputRef.current) {
+      if (isEditing) {
+        textInputRef.current.focus();
+      } else {
+        textInputRef.current.blur();
+      }
+    }
+  }, [textInputRef])
+
   return (
-    <View>
-      <View>
+    <View style={styles.container}>
+      <View style={styles.infoContainer}>
         <TouchableOpacity
           activeOpacity={0.7}
           style={styles.taskButton}
@@ -25,75 +55,110 @@ export function Tasktask(task, toggleTaskDone, removeTask, editTask) {
             style={task.done ? styles.taskMarkerDone : styles.taskMarker}
           >
             { task.done && (
-              <Icon 
+              <Icon
                 name="check"
                 size={12}
                 color="#FFF"
               />
             )}
           </View>
-  
+
           <TextInput
             style={task.done ? styles.taskTextDone : styles.taskText}
-          >
-            {task.title}
-          </TextInput>
+            ref={textInputRef}
+            value={taskNewTitleValue}
+            editable={isEditing}
+            onChangeText={setTaskNewTitleValue}
+            onSubmitEditing={handleSubmitEditing}
+            />
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        style={{ paddingHorizontal: 24 }}
-        onPress={() => editTask(task.id)}
-      >
-        <Image source={trashIcon} />
-      </TouchableOpacity>
-  
-      <TouchableOpacity
-        style={{ paddingHorizontal: 24 }}
-        onPress={() => removeTask(task.id)}
-      >
-        <Image source={trashIcon} />
-      </TouchableOpacity>
+          <View style={styles.iconsContainer}>
+            {isEditing ? (
+              <TouchableOpacity
+                onPress={handleCancelEditing}
+              >
+                <Icon name='x' size={24} color="#b2b2b2"  />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={handleStartEditing}
+              >
+                <Image source={editIcon} />
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.iconsDivider} />
+
+            <TouchableOpacity
+              style={{ paddingHorizontal: 24 }}
+              onPress={() => removeTask(task.id)}
+              disabled={isEditing}
+            >
+              <Image source={trashIcon} style={{ opacity: isEditing ? 0.2 : 1 }} />
+            </TouchableOpacity>
+          </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  taskButton: {
+  container: {
+    alignItems: 'center',
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 15,
-    marginBottom: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  infoContainer: {
+    flex: 1,
+  },
+  taskButton: {
+    alignItems: 'center',
     borderRadius: 4,
     flexDirection: 'row',
-    alignItems: 'center'
+    flex: 1,
+    marginBottom: 4,
+    paddingHorizontal: 24,
   },
   taskMarker: {
-    height: 16,
-    width: 16,
+    alignItems: 'center',
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#B2B2B2',
+    height: 16,
+    justifyContent: 'center',
     marginRight: 15,
-    alignItems: 'center',
-    justifyContent: 'center'
+    width: 16,
   },
   taskText: {
     color: '#666',
     fontFamily: 'Inter-Medium'
   },
   taskMarkerDone: {
-    height: 16,
-    width: 16,
-    borderRadius: 4,
-    backgroundColor: '#1DB863',
-    marginRight: 15,
     alignItems: 'center',
-    justifyContent: 'center'
+    backgroundColor: '#1DB863',
+    borderRadius: 4,
+    height: 16,
+    justifyContent: 'center',
+    marginRight: 15,
+    width: 16,
   },
   taskTextDone: {
     color: '#1DB863',
+    fontFamily: 'Inter-Medium',
     textDecorationLine: 'line-through',
-    fontFamily: 'Inter-Medium'
-  }
+  },
+  iconsContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingLeft: 12,
+    paddingRight: 24,
+  },
+  iconsDivider: {
+    backgroundColor: 'rgba(196, 196, 196, 0.24)',
+    height: 24,
+    marginHorizontal: 12,
+    width: 1,
+  },
 })
